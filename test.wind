@@ -1,2 +1,2 @@
-let i = 5
-let y = i + 3
+let i := 5
+let y := i + 3

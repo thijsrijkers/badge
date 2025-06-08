@@ -29,7 +29,7 @@ func Tokenize(line string) ([]Token, error) {
 		switch {
 		case word == "let":
 			tokens = append(tokens, Token{Type: TokenLet, Value: word})
-		case word == "=":
+		case word == ":=":
 			tokens = append(tokens, Token{Type: TokenEqual, Value: word})
 		case isNumber(word):
 			tokens = append(tokens, Token{Type: TokenNumber, Value: word})
