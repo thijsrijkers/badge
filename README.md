@@ -1,4 +1,4 @@
-# Zul (lang)
+# Zul
 
 Zul is a lightweight scripting language that compiles directly to x86_64 machine code. It is designed for simplicity and performance, allowing scripts to execute as native binaries without any runtime or virtual machine.
 
