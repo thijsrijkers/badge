@@ -4,20 +4,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"zul/elf"
-	"zul/compiler"
+	"wind/elf"
+	"wind/compiler"
 )
 
 func main() {
-	// Read Zul source code from test.zl file
-	source, err := ioutil.ReadFile("test.zl")
+	// Read Wind source code from test.zl file
+	source, err := ioutil.ReadFile("test.wind")
 	if err != nil {
 		log.Fatalf("Failed to read source file: %v", err)
 	}
 
 	line := string(source)
 
-	// Compile the Zul code line
+	// Compile the Wind code line
 	err = compiler.CompileLine(line)
 	if err != nil {
 		log.Fatalf("Compile error: %v", err)

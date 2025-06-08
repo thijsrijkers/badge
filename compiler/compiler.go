@@ -6,8 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
-	"zul/elf"
-	"zul/tokenizer"
+	"wind/elf"
+	"wind/tokenizer"
 )
 
 func CompileLine(line string) error {
