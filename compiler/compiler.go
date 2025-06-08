@@ -5,36 +5,76 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
+	"strings"
+	"wind/expr"
 	"wind/tokenizer"
 )
 
-type Expr struct {
-	Left     uint64
-	Op       string
-	Right    uint64
-	IsBinary bool
-}
+func CompileLines(source string) error {
+	lines := strings.Split(source, "\n")
 
-func CompileLine(line string) error {
-	tokens, err := tokenizer.Tokenize(line)
-	if err != nil {
-		return err
+	asmLines := []string{
+		"section .text",
+		"global _start",
+		"_start:",
 	}
 
-	if len(tokens) < 4 || tokens[0].Type != tokenizer.TokenLet || tokens[1].Type != tokenizer.TokenIdent || tokens[2].Type != tokenizer.TokenEqual {
-		return errors.New("invalid syntax")
+	// Store variable values to resolve references
+	vars := make(map[string]uint64)
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		tokens, err := tokenizer.Tokenize(line)
+		if err != nil {
+			return err
+		}
+
+		if len(tokens) < 4 || tokens[0].Type != tokenizer.TokenLet || tokens[1].Type != tokenizer.TokenIdent || tokens[2].Type != tokenizer.TokenEqual {
+			return errors.New("invalid syntax")
+		}
+
+		varName := tokens[1].Value
+
+		exprTokens := tokens[3:]
+		exprParsed, err := expr.ParseExpr(exprTokens, vars)
+		if err != nil {
+			return err
+		}
+
+		asmCode := expr.GenerateASM(exprParsed)
+		asmLines = append(asmLines, asmCode...)
+
+		// Calculate and store variable value
+		val := exprParsed.Left
+		if exprParsed.IsBinary {
+			switch exprParsed.Op {
+			case "+":
+				val = exprParsed.Left + exprParsed.Right
+			case "-":
+				val = exprParsed.Left - exprParsed.Right
+			case "*":
+				val = exprParsed.Left * exprParsed.Right
+			default:
+				return fmt.Errorf("unsupported operator %s", exprParsed.Op)
+			}
+		}
+		vars[varName] = val
 	}
 
-	exprTokens := tokens[3:]
-	expr, err := parseExpr(exprTokens)
-	if err != nil {
-		return err
-	}
+	// Exit syscall using rax value from last expression
+	asmLines = append(asmLines,
+		"    mov rdi, rax",
+		"    mov rax, 60",
+		"    syscall",
+	)
 
-	asmCode := generateASM(expr)
+	asmCode := strings.Join(asmLines, "\n")
 
-	err = os.WriteFile("out.asm", []byte(asmCode), 0644)
+	err := os.WriteFile("out.asm", []byte(asmCode), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write asm file: %w", err)
 	}
@@ -49,82 +89,5 @@ func CompileLine(line string) error {
 		return fmt.Errorf("linking failed: %w\n%s", err, out)
 	}
 
-	cmdRun := exec.Command("./out")
-	if err := cmdRun.Run(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			ws := exitErr.Sys().(interface{ ExitStatus() int })
-			fmt.Printf("Program exited with code: %d\n", ws.ExitStatus())
-			return nil
-		}
-		return fmt.Errorf("execution error: %w", err)
-	}
-
-	fmt.Println("Program exited with code 0")
 	return nil
-}
-
-func parseExpr(tokens []tokenizer.Token) (Expr, error) {
-	if len(tokens) == 1 && tokens[0].Type == tokenizer.TokenNumber {
-		val, err := strconv.ParseUint(tokens[0].Value, 10, 64)
-		if err != nil {
-			return Expr{}, err
-		}
-		return Expr{Left: val, IsBinary: false}, nil
-	}
-
-	if len(tokens) == 3 &&
-		tokens[0].Type == tokenizer.TokenNumber &&
-		tokens[1].Type == tokenizer.TokenOperator &&
-		tokens[2].Type == tokenizer.TokenNumber {
-
-		left, err := strconv.ParseUint(tokens[0].Value, 10, 64)
-		if err != nil {
-			return Expr{}, err
-		}
-		right, err := strconv.ParseUint(tokens[2].Value, 10, 64)
-		if err != nil {
-			return Expr{}, err
-		}
-		op := tokens[1].Value
-		return Expr{Left: left, Right: right, Op: op, IsBinary: true}, nil
-	}
-
-	return Expr{}, errors.New("unsupported expression")
-}
-
-func generateASM(expr Expr) string {
-	if !expr.IsBinary {
-		return fmt.Sprintf(`section .text
-global _start
-
-_start:
-    mov rax, %d
-    mov rdi, rax
-    mov rax, 60
-    syscall
-`, expr.Left)
-	}
-
-	var asmOp string
-	switch expr.Op {
-	case "+":
-		asmOp = "add"
-	case "-":
-		asmOp = "sub"
-	case "*":
-		asmOp = "imul"
-	default:
-		return "; unsupported operator\n"
-	}
-
-	return fmt.Sprintf(`section .text
-global _start
-
-_start:
-    mov rax, %d
-    %s rax, %d
-    mov rdi, rax
-    mov rax, 60
-    syscall
-`, expr.Left, asmOp, expr.Right)
 }

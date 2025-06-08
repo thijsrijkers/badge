@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"wind/elf"
 	"wind/compiler"
+	"wind/elf"
 )
 
 func main() {
@@ -15,13 +15,12 @@ func main() {
 		log.Fatalf("Failed to read source file: %v", err)
 	}
 
-	line := string(source)
-
-	// Compile the Wind code line
-	err = compiler.CompileLine(line)
+	// Compile the entire source (multiple lines)
+	err = compiler.CompileLines(string(source))
 	if err != nil {
 		log.Fatalf("Compile error: %v", err)
 	}
+	fmt.Println("Compilation successful")
 
 	// Run the compiled ELF executable and get its exit code
 	exitCode, err := elf.RunElfAndGetExitCode("./out")
