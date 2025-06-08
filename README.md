@@ -4,7 +4,7 @@ Zul is a lightweight scripting language that compiles directly to x86_64 machine
 
 ## Overview
 
-ZLang bridges the gap between scripting and systems programming by providing a minimalistic language that maps directly to raw machine instructions. It is well-suited for educational purposes, experimentation with compiler design, and low-level systems programming.
+Zul bridges the gap between scripting and systems programming by providing a minimalistic language that maps directly to raw machine instructions. It is well-suited for educational purposes, experimentation with compiler design, and low-level systems programming.
 
 ## Goals
 
@@ -15,7 +15,7 @@ ZLang bridges the gap between scripting and systems programming by providing a m
 
 ## Implementation
 
-ZLang is implemented in Go and processes `.zl` source files. The compiler reads ZLang code, parses it, and emits raw machine instructions targeting the x86_64 architecture. The output is a standalone executable file that can be run directly on Linux systems.
+Zul is implemented in Go and processes `.zl` source files. The compiler reads ZLang code, parses it, and emits raw machine instructions targeting the x86_64 architecture. The output is a standalone executable file that can be run directly on Linux systems.
 
 ## Features
 
