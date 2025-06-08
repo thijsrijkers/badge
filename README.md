@@ -24,6 +24,38 @@ Zul is implemented in Go and processes `.zl` source files. The compiler reads ZL
 - Minimal and predictable execution model
 - Executable output without linking or intermediate formats
 
+## Testing Zul Scripts
+
+To test Zul scripts, create a source file with the `.zl` extension (e.g., `test.zl`) in the project directory. For example:
+
+```bash
+let i = 40 + 2
+```
+
+Then, run the main.go program which reads the Zul source file, compiles it into a native executable, runs the executable, and prints the program’s exit code:
+
+```bash
+go run main.go
+```
+
+You should see output like:
+
+```bash
+Program exited with code: 42
+```
+
+## Checking the Result on Different Platforms
+After running the compiled Zul script, you can check the program's exit code directly from the shell:
+
+- MacOS, Linux and WSL (Windows Subsystem for Linux):
+
+```bash
+echo $?
+```
+
+The number printed is the exit code returned by the Zul program (in this example, 42). This exit code confirms that your Zul script compiled and executed correctly as a native binary.
+
+
 ## Use Cases
 
 - Educational tool for learning machine code and compiler development
