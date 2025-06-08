@@ -1,7 +1,8 @@
 package tokenizer
 
 import (
-	"fmt"
+	"errors"
+	"strings"
 	"unicode"
 )
 
@@ -10,10 +11,10 @@ type TokenType int
 const (
 	TokenLet TokenType = iota
 	TokenIdent
-	TokenNumber
 	TokenEqual
-	TokenPlus
-	TokenEOF
+	TokenNumber
+	TokenOperator
+	TokenUnknown
 )
 
 type Token struct {
@@ -21,50 +22,52 @@ type Token struct {
 	Value string
 }
 
-func Tokenize(input string) ([]Token, error) {
+func Tokenize(line string) ([]Token, error) {
 	var tokens []Token
-	runes := []rune(input)
-	i := 0
-
-	for i < len(runes) {
-		ch := runes[i]
-
+	words := strings.Fields(line)
+	for _, word := range words {
 		switch {
-		case unicode.IsSpace(ch):
-			i++
-
-		case unicode.IsLetter(ch):
-			start := i
-			for i < len(runes) && (unicode.IsLetter(runes[i]) || unicode.IsDigit(runes[i])) {
-				i++
-			}
-			word := string(runes[start:i])
-			if word == "let" {
-				tokens = append(tokens, Token{Type: TokenLet, Value: word})
-			} else {
-				tokens = append(tokens, Token{Type: TokenIdent, Value: word})
-			}
-
-		case unicode.IsDigit(ch):
-			start := i
-			for i < len(runes) && unicode.IsDigit(runes[i]) {
-				i++
-			}
-			tokens = append(tokens, Token{Type: TokenNumber, Value: string(runes[start:i])})
-
-		case ch == '=':
-			tokens = append(tokens, Token{Type: TokenEqual, Value: string(ch)})
-			i++
-
-		case ch == '+':
-			tokens = append(tokens, Token{Type: TokenPlus, Value: string(ch)})
-			i++
-
+		case word == "let":
+			tokens = append(tokens, Token{Type: TokenLet, Value: word})
+		case word == "=":
+			tokens = append(tokens, Token{Type: TokenEqual, Value: word})
+		case isNumber(word):
+			tokens = append(tokens, Token{Type: TokenNumber, Value: word})
+		case isOperator(word):
+			tokens = append(tokens, Token{Type: TokenOperator, Value: word})
+		case isIdent(word):
+			tokens = append(tokens, Token{Type: TokenIdent, Value: word})
 		default:
-			return nil, fmt.Errorf("unexpected character: '%c'", ch)
+			return nil, errors.New("unknown token: " + word)
 		}
 	}
-
-	tokens = append(tokens, Token{Type: TokenEOF, Value: ""})
 	return tokens, nil
+}
+
+func isNumber(s string) bool {
+	for _, r := range s {
+		if !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return len(s) > 0
+}
+
+func isOperator(s string) bool {
+	return s == "+" || s == "-" || s == "*"
+}
+
+func isIdent(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for i, r := range s {
+		if i == 0 && !unicode.IsLetter(r) && r != '_' {
+			return false
+		}
+		if i > 0 && !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' {
+			return false
+		}
+	}
+	return true
 }

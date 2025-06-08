@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	// Read Wind source code from test.zl file
+	// Read Wind source code from test.wind file
 	source, err := ioutil.ReadFile("test.wind")
 	if err != nil {
 		log.Fatalf("Failed to read source file: %v", err)

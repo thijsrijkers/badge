@@ -6,9 +6,15 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
-	"wind/elf"
 	"wind/tokenizer"
 )
+
+type Expr struct {
+	Left     uint64
+	Op       string
+	Right    uint64
+	IsBinary bool
+}
 
 func CompileLine(line string) error {
 	tokens, err := tokenizer.Tokenize(line)
@@ -16,48 +22,35 @@ func CompileLine(line string) error {
 		return err
 	}
 
-	if len(tokens) < 6 || tokens[0].Type != tokenizer.TokenLet ||
-		tokens[1].Type != tokenizer.TokenIdent || tokens[1].Value != "i" ||
-		tokens[2].Type != tokenizer.TokenEqual ||
-		tokens[3].Type != tokenizer.TokenNumber ||
-		tokens[4].Type != tokenizer.TokenPlus ||
-		tokens[5].Type != tokenizer.TokenNumber {
-		return errors.New("invalid syntax or token pattern")
+	if len(tokens) < 4 || tokens[0].Type != tokenizer.TokenLet || tokens[1].Type != tokenizer.TokenIdent || tokens[2].Type != tokenizer.TokenEqual {
+		return errors.New("invalid syntax")
 	}
 
-	left, err := strconv.ParseUint(tokens[3].Value, 10, 64)
+	exprTokens := tokens[3:]
+	expr, err := parseExpr(exprTokens)
 	if err != nil {
-		return errors.New("invalid left operand")
+		return err
 	}
-	right, err := strconv.ParseUint(tokens[5].Value, 10, 64)
+
+	asmCode := generateASM(expr)
+
+	err = os.WriteFile("out.asm", []byte(asmCode), 0644)
 	if err != nil {
-		return errors.New("invalid right operand")
-	}
-	if right > 0xFFFFFFFF {
-		return errors.New("right operand too large for immediate")
+		return fmt.Errorf("failed to write asm file: %w", err)
 	}
 
-	code := []byte{
-		0x48, 0xB8, // mov rax, imm64
-	}
-	code = append(code, intToBytes64(left)...)
-	code = append(code, 0x48, 0x05) // add rax, imm32
-	code = append(code, intToBytes32(uint32(right))...)
-	code = append(code, 0x48, 0x89, 0xC7)                         // mov rdi, rax
-	code = append(code, 0x48, 0xC7, 0xC0, 0x3C, 0x00, 0x00, 0x00) // mov rax, 60 (exit)
-	code = append(code, 0x0F, 0x05)                               // syscall
-
-	final := append(elf.ELFHeader, elf.ProgHeaderWithSize(uint64(len(code)))...)
-	final = append(final, code...)
-
-	err = os.WriteFile("out", final, 0755)
-	if err != nil {
-		return fmt.Errorf("failed to write ELF file: %w", err)
+	cmdAssemble := exec.Command("nasm", "-f", "elf64", "out.asm", "-o", "out.o")
+	if out, err := cmdAssemble.CombinedOutput(); err != nil {
+		return fmt.Errorf("assembly failed: %w\n%s", err, out)
 	}
 
-	cmd := exec.Command("./out")
-	err = cmd.Run()
-	if err != nil {
+	cmdLink := exec.Command("ld", "out.o", "-o", "out")
+	if out, err := cmdLink.CombinedOutput(); err != nil {
+		return fmt.Errorf("linking failed: %w\n%s", err, out)
+	}
+
+	cmdRun := exec.Command("./out")
+	if err := cmdRun.Run(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			ws := exitErr.Sys().(interface{ ExitStatus() int })
 			fmt.Printf("Program exited with code: %d\n", ws.ExitStatus())
@@ -70,25 +63,68 @@ func CompileLine(line string) error {
 	return nil
 }
 
-// helpers
-func intToBytes64(n uint64) []byte {
-	return []byte{
-		byte(n),
-		byte(n >> 8),
-		byte(n >> 16),
-		byte(n >> 24),
-		byte(n >> 32),
-		byte(n >> 40),
-		byte(n >> 48),
-		byte(n >> 56),
+func parseExpr(tokens []tokenizer.Token) (Expr, error) {
+	if len(tokens) == 1 && tokens[0].Type == tokenizer.TokenNumber {
+		val, err := strconv.ParseUint(tokens[0].Value, 10, 64)
+		if err != nil {
+			return Expr{}, err
+		}
+		return Expr{Left: val, IsBinary: false}, nil
 	}
+
+	if len(tokens) == 3 &&
+		tokens[0].Type == tokenizer.TokenNumber &&
+		tokens[1].Type == tokenizer.TokenOperator &&
+		tokens[2].Type == tokenizer.TokenNumber {
+
+		left, err := strconv.ParseUint(tokens[0].Value, 10, 64)
+		if err != nil {
+			return Expr{}, err
+		}
+		right, err := strconv.ParseUint(tokens[2].Value, 10, 64)
+		if err != nil {
+			return Expr{}, err
+		}
+		op := tokens[1].Value
+		return Expr{Left: left, Right: right, Op: op, IsBinary: true}, nil
+	}
+
+	return Expr{}, errors.New("unsupported expression")
 }
 
-func intToBytes32(n uint32) []byte {
-	return []byte{
-		byte(n),
-		byte(n >> 8),
-		byte(n >> 16),
-		byte(n >> 24),
+func generateASM(expr Expr) string {
+	if !expr.IsBinary {
+		return fmt.Sprintf(`section .text
+global _start
+
+_start:
+    mov rax, %d
+    mov rdi, rax
+    mov rax, 60
+    syscall
+`, expr.Left)
 	}
+
+	var asmOp string
+	switch expr.Op {
+	case "+":
+		asmOp = "add"
+	case "-":
+		asmOp = "sub"
+	case "*":
+		asmOp = "imul"
+	default:
+		return "; unsupported operator\n"
+	}
+
+	return fmt.Sprintf(`section .text
+global _start
+
+_start:
+    mov rax, %d
+    %s rax, %d
+    mov rdi, rax
+    mov rax, 60
+    syscall
+`, expr.Left, asmOp, expr.Right)
 }
