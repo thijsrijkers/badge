@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"wind/compiler"
-	"wind/elf"
+	"badge/compiler"
+	"badge/elf"
 )
 
 func main() {
-	// Read Wind source code from test.wind file
-	source, err := ioutil.ReadFile("test.wind")
+	// Read Badge source code from test.badge file
+	source, err := ioutil.ReadFile("test.badge")
 	if err != nil {
 		log.Fatalf("Failed to read source file: %v", err)
 	}

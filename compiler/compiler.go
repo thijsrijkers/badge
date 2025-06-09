@@ -6,8 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"wind/expr"
-	"wind/tokenizer"
+	"badge/expr"
+	"badge/tokenizer"
 )
 
 func CompileLines(source string) error {

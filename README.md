@@ -1,10 +1,10 @@
-# Wind
+# Badge
 
-Wind is a lightweight scripting language that compiles directly to x86_64 machine code. It is designed for simplicity and performance, allowing scripts to execute as native binaries without any runtime or virtual machine.
+Badge is a lightweight scripting language that compiles directly to x86_64 machine code. It is designed for simplicity and performance, allowing scripts to execute as native binaries without any runtime or virtual machine.
 
 ## Overview
 
-Wind bridges the gap between scripting and systems programming by providing a minimalistic language that maps directly to raw machine instructions. It is well-suited for educational purposes, experimentation with compiler design, and low-level systems programming.
+Badge bridges the gap between scripting and systems programming by providing a minimalistic language that maps directly to raw machine instructions. It is well-suited for educational purposes, experimentation with compiler design, and low-level systems programming.
 
 ## Goals
 
@@ -15,7 +15,7 @@ Wind bridges the gap between scripting and systems programming by providing a mi
 
 ## Implementation
 
-Wind is implemented in Go and processes `.zl` source files. The compiler reads ZLang code, parses it, and emits raw machine instructions targeting the x86_64 architecture. The output is a standalone executable file that can be run directly on Linux systems.
+Badge is implemented in Go and processes `.zl` source files. The compiler reads ZLang code, parses it, and emits raw machine instructions targeting the x86_64 architecture. The output is a standalone executable file that can be run directly on Linux systems.
 
 ## Features
 
@@ -24,15 +24,15 @@ Wind is implemented in Go and processes `.zl` source files. The compiler reads Z
 - Minimal and predictable execution model
 - Executable output without linking or intermediate formats
 
-## Testing Wind Scripts
+## Testing Badge Scripts
 
-To test Wind scripts, create a source file with the `.zl` extension (e.g., `test.zl`) in the project directory. For example:
+To test Badge scripts, create a source file with the `.zl` extension (e.g., `test.zl`) in the project directory. For example:
 
 ```bash
 let i = 40 + 2
 ```
 
-Then, run the main.go program which reads the Wind source file, compiles it into a native executable, runs the executable, and prints the program’s exit code:
+Then, run the main.go program which reads the Badge source file, compiles it into a native executable, runs the executable, and prints the program’s exit code:
 
 ```bash
 go run main.go
@@ -45,15 +45,15 @@ Program exited with code: 42
 ```
 
 ## Checking the Result on Different Platforms
-After running the compiled Wind script, you can check the program's exit code directly from the shell:
+After running the compiled Badge script, you can check the program's exit code directly from the shell:
 
-- MacOS, Linux and WSL (Windows Subsystem for Linux):
+- MacOS, Linux and WSL (Badgeows Subsystem for Linux):
 
 ```bash
 echo $?
 ```
 
-The number printed is the exit code returned by the Wind program (in this example, 42). This exit code confirms that your Wind script compiled and executed correctly as a native binary.
+The number printed is the exit code returned by the Badge program (in this example, 42). This exit code confirms that your Badge script compiled and executed correctly as a native binary.
 
 
 ## Use Cases
