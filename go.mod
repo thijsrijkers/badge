@@ -1,3 +1,3 @@
-module wind
+module badge
 
 go 1.21
